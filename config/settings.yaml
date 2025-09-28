@@ -39,6 +39,6 @@ logging:
 # Event processing
 processing:
   timezone: "Asia/Taipei"
-  event_prefix: "[ITRI] "  # 事件標題前綴
+  event_prefix: ""  # 事件標題前綴
   description_suffix: "\n\n--- 由 CalendarBridge 同步 ---"
   max_description_length: 8000

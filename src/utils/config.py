@@ -13,7 +13,7 @@ class SourceConfig(BaseModel):
     url: str
     timeout: int = 30
     retry_count: int = 3
-    user_agent: str = "Calendar-Sync/1.0"
+    user_agent: str = "CalendarBridge/1.0"
 
 
 class GoogleCalendarConfig(BaseModel):
@@ -54,8 +54,8 @@ class LoggingConfig(BaseModel):
 class ProcessingConfig(BaseModel):
     """事件處理設定"""
     timezone: str = "Asia/Taipei"
-    event_prefix: str = "[ITRI] "
-    description_suffix: str = "\n\n--- 由 Calendar Sync 工具同步 ---"
+    event_prefix: str = ""
+    description_suffix: str = "\n\n--- 由 CalendarBridge 同步 ---"
     max_description_length: int = 8000
 
 
