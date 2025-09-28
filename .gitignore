@@ -37,6 +37,7 @@ Thumbs.db
 # Configuration files containing sensitive data
 config/credentials.json
 config/token.json
+config/service_account.json
 
 # Database files
 data/
@@ -61,3 +62,18 @@ temp/
 
 # Runtime files
 *.pid
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Calendar-specific
+# Test ICS files (may contain sensitive calendar data)
+test_calendar.ics
+*.ics

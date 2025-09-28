@@ -10,6 +10,7 @@ from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -33,7 +34,37 @@ class GoogleCalendarClient:
         self.credentials = None
         
     def authenticate(self) -> None:
-        """執行 Google OAuth 認證"""
+        """執行 Google 認證（OAuth 或服務帳號）"""
+        if self.config.auth_type == "service_account":
+            self._authenticate_service_account()
+        else:
+            self._authenticate_oauth()
+    
+    def _authenticate_service_account(self) -> None:
+        """服務帳號認證"""
+        service_account_file = Path(self.config.service_account_file)
+        
+        if not service_account_file.exists():
+            raise FileNotFoundError(
+                f"Service account file not found: {service_account_file}\n"
+                "Please download service account key from Google Cloud Console"
+            )
+        
+        try:
+            creds = service_account.Credentials.from_service_account_file(
+                str(service_account_file), scopes=SCOPES
+            )
+            
+            self.credentials = creds
+            self.service = build('calendar', 'v3', credentials=creds)
+            logger.info("Google Calendar service account authentication successful")
+            
+        except Exception as e:
+            logger.error(f"Service account authentication failed: {e}")
+            raise
+    
+    def _authenticate_oauth(self) -> None:
+        """OAuth 認證"""
         creds = None
         token_file = Path(self.config.token_file)
         
@@ -46,7 +77,12 @@ class GoogleCalendarClient:
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 logger.info("Refreshing expired credentials")
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    logger.error(f"Token refresh failed: {e}")
+                    logger.info("Refresh token may be expired, need to re-authenticate")
+                    raise
             else:
                 logger.info("Starting OAuth flow")
                 credentials_file = Path(self.config.credentials_file)
@@ -69,7 +105,7 @@ class GoogleCalendarClient:
         
         self.credentials = creds
         self.service = build('calendar', 'v3', credentials=creds)
-        logger.info("Google Calendar authentication successful")
+        logger.info("Google Calendar OAuth authentication successful")
     
     def get_calendar_info(self, calendar_id: str = None) -> Dict[str, Any]:
         """取得行事曆資訊"""
@@ -395,8 +431,27 @@ class GoogleCalendarClient:
                 # 提取 UNTIL（需要格式化日期）
                 until_match = re.search(r"'UNTIL':\s*\[datetime\.datetime\(([^)]+)\)\]", str(vrecur_obj))
                 if until_match:
-                    # 簡化處理 - 移除 UNTIL 避免複雜的日期格式問題
-                    logger.debug("Skipping UNTIL in RRULE conversion to avoid date format issues")
+                    try:
+                        # 解析 datetime 參數
+                        datetime_args = until_match.group(1)
+                        # 嘗試提取年、月、日、時、分
+                        parts = [part.strip() for part in datetime_args.split(',')]
+                        
+                        if len(parts) >= 5:  # 至少有年月日時分
+                            year = int(parts[0])
+                            month = int(parts[1])
+                            day = int(parts[2])
+                            hour = int(parts[3])
+                            minute = int(parts[4])
+                            
+                            # 格式化為 Google Calendar 接受的 UTC 時間格式
+                            until_str = f"{year:04d}{month:02d}{day:02d}T{hour:02d}{minute:02d}00Z"
+                            rrule_parts.append(f"UNTIL={until_str}")
+                            logger.debug(f"Added UNTIL to RRULE: {until_str}")
+                        else:
+                            logger.warning("Could not parse UNTIL datetime, skipping")
+                    except Exception as e:
+                        logger.warning(f"Error parsing UNTIL date: {e}, skipping")
                 
                 if len(rrule_parts) > 1:  # 至少有 FREQ 和其他參數
                     return ";".join(rrule_parts)

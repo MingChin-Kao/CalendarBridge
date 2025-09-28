@@ -21,7 +21,9 @@ class GoogleCalendarConfig(BaseModel):
     calendar_id: str = "primary"
     credentials_file: str = "config/credentials.json"
     token_file: str = "config/token.json"
-    application_name: str = "Calendar Sync Tool"
+    application_name: str = "CalendarBridge"
+    auth_type: str = "oauth"  # "oauth" 或 "service_account"
+    service_account_file: str = "config/service_account.json"
 
 
 class SyncConfig(BaseModel):
@@ -43,7 +45,7 @@ class DatabaseConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """日誌設定"""
     level: str = "INFO"
-    file: str = "logs/calendar_sync.log"
+    file: str = "logs/calendarbridge.log"
     max_size_mb: int = 10
     backup_count: int = 5
     console: bool = True

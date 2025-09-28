@@ -1,213 +1,141 @@
-# Calendar Sync Tool
+# CalendarBridge
 
-一個精準的行事曆同步工具，將公司 ICS 行事曆同步到 Google Calendar。
+一個精準的行事曆同步工具，將 ICS 行事曆自動同步到 Google Calendar。支援複雜的週期事件、Docker 部署和服務帳號認證。
 
-## 功能特色
+## ✨ 功能特色
 
-- ✅ **精準同步**: 支援週期事件、時區轉換和事件變更偵測
-- ✅ **增量更新**: 只同步變更的事件，避免重複處理
-- ✅ **週期事件支援**: 完整處理 RRULE、EXDATE 等複雜週期規則
-- ✅ **衝突解決**: 智能處理事件衝突和重複
-- ✅ **狀態追蹤**: 本地資料庫記錄同步狀態和歷史
-- ✅ **錯誤處理**: 完整的重試機制和錯誤記錄
+- 🔄 **精準同步**: 支援週期事件、時區轉換和事件變更偵測
+- ⚡ **增量更新**: 只同步變更的事件，避免重複處理
+- 🔁 **週期事件支援**: 完整處理 RRULE、UNTIL、EXDATE 等複雜週期規則
+- 🔧 **智能處理**: 自動檢測並修復重複事件問題
+- 📊 **狀態追蹤**: 本地資料庫記錄同步狀態和歷史
+- 🐳 **Docker 支援**: 完整的容器化部署方案
+- 🔐 **雙重認證**: 支援 OAuth 和服務帳號兩種認證方式
 
-## 快速開始
+## 🚀 快速開始
 
-### 1. 安裝依賴
+### 基本設置
 
 ```bash
-# 建立虛擬環境
+# 1. 克隆專案
+git clone <repository-url>
+cd CalendarBridge
+
+# 2. 建立虛擬環境
 python3 -m venv venv
 source venv/bin/activate
 
-# 安裝套件
+# 3. 安裝依賴
 pip install -r requirements.txt
+
+# 4. 初始化設置
+python setup.py
 ```
 
-### 2. 設置 Google Calendar API
-
-#### 步驟 1: 建立 Google Cloud 專案
-
-1. 前往 [Google Cloud Console](https://console.cloud.google.com/)
-2. 建立新專案或選擇現有專案
-3. 啟用 Google Calendar API:
-   - 在側邊欄選擇 "APIs & Services" > "Library"
-   - 搜尋 "Google Calendar API"
-   - 點擊啟用
-
-#### 步驟 2: 建立認證
-
-1. 在 Google Cloud Console 中，前往 "APIs & Services" > "Credentials"
-2. 點擊 "Create Credentials" > "OAuth 2.0 Client IDs"
-3. 選擇 "Desktop application"
-4. 輸入名稱 (例如: "Calendar Sync Tool")
-5. 下載 JSON 認證檔案
-
-#### 步驟 3: 設置認證檔案
+### 執行同步
 
 ```bash
-# 將下載的認證檔案移到專案目錄
-cp ~/Downloads/credentials.json config/credentials.json
-```
-
-### 3. 設定檔案
-
-編輯 `config/settings.yaml`，確認以下設定：
-
-```yaml
-source:
-  url: "你的_ICS_URL"
-
-google_calendar:
-  calendar_id: "primary"  # 或指定特定行事曆 ID
-  credentials_file: "config/credentials.json"
-```
-
-### 4. 執行同步
-
-```bash
-# 測試基本功能
-python test_basic.py
-
-# 執行一次性同步 (乾跑模式)
+# 測試模式（不實際執行）
 python main.py --once --dry-run
 
-# 執行一次性同步
+# 執行一次同步
 python main.py --once
 
-# 啟動持續同步
-python main.py
+# 持續同步模式
+python main.py --continuous
 ```
 
-## 使用說明
+## 📖 詳細文件
 
-### 命令行選項
+### 🔧 設置與配置
+- **[Google Calendar API 設置](docs/google_api_setup.md)** - OAuth 和服務帳號設置指南
+- **[配置檔案說明](docs/configuration.md)** - 詳細的設定選項說明
 
-```bash
-python main.py [選項]
+### 🐳 部署方案
+- **[Docker 部署指南](docs/deployment_guide.md)** - 完整的 Docker 部署流程
+- **[服務帳號設置](docs/service_account_setup.md)** - 生產環境推薦的認證方式
+- **[OAuth Docker 設置](docs/docker_oauth_setup.md)** - 使用 OAuth 的 Docker 部署方式
 
-選項:
-  --config, -c     設定檔案路徑 (預設: config/settings.yaml)
-  --once          執行一次同步後退出
-  --force         強制完整同步 (忽略快取)
-  --dry-run       顯示將要同步的內容但不實際執行
-```
+### 🔧 維護與故障排除
+- **[故障排除指南](docs/troubleshooting.md)** - 常見問題與解決方案
+- **[API 參考](docs/api_reference.md)** - 程式模組與 API 說明
 
-### 設定說明
-
-主要設定檔案 `config/settings.yaml`:
-
-```yaml
-# 來源 ICS 設定
-source:
-  url: "你的_ICS_URL"
-  timeout: 30
-  retry_count: 3
-
-# Google Calendar 設定
-google_calendar:
-  calendar_id: "primary"  # 或特定行事曆 ID
-  credentials_file: "config/credentials.json"
-
-# 同步設定
-sync:
-  interval_minutes: 30    # 同步間隔
-  lookahead_days: 365     # 向前同步天數
-  lookbehind_days: 30     # 向後同步天數
-  enable_delete: true     # 是否刪除來源已移除的事件
-
-# 事件處理
-processing:
-  timezone: "Asia/Taipei"
-  event_prefix: "[ITRI] "  # 事件標題前綴
-  description_suffix: "\\n\\n--- 由 Calendar Sync 工具同步 ---"
-```
-
-## 專案結構
+## 🏗️ 專案結構
 
 ```
-calendar-sync/
-├── venv/                 # 虛擬環境
-├── src/
+CalendarBridge/
+├── src/                  # 核心程式碼
 │   ├── parsers/         # ICS 解析器
-│   │   └── ics_parser.py
-│   ├── clients/         # Google API 客戶端
-│   │   └── google_calendar.py
+│   ├── clients/         # Google Calendar 客戶端
 │   ├── sync/            # 同步引擎
-│   │   └── engine.py
-│   ├── storage/         # 狀態管理
-│   │   └── database.py
+│   ├── storage/         # 資料庫存取
 │   └── utils/           # 工具函數
-│       ├── config.py
-│       └── logger.py
-├── config/
-│   ├── settings.yaml    # 主要配置
-│   └── credentials.json # Google API 認證 (需要自行建立)
+├── config/              # 配置檔案
+├── docs/                # 詳細文件
 ├── data/                # 本地資料庫
 ├── logs/                # 日誌檔案
-├── main.py              # 主程式
-├── test_basic.py        # 基本測試
-└── requirements.txt     # 套件依賴
+├── main.py              # 主程式入口
+├── setup.py             # 初始化腳本
+├── Dockerfile           # Docker 建置檔
+├── docker-compose.yml   # Docker 編排檔
+└── requirements.txt     # Python 依賴
 ```
 
-## 技術特色
+## 🎯 使用情境
 
-### 精準週期事件處理
+### 個人使用
+```bash
+# 簡單的 OAuth 認證
+python setup.py
+python main.py --continuous
+```
 
-- 完整支援 RFC 5545 RRULE 規範
-- 處理 EXDATE (排除日期) 和修改實例
-- 正確展開複雜的週期規則
+### 生產環境
+```bash
+# 使用服務帳號認證 + Docker
+docker-compose up -d
+```
 
-### 智能變更偵測
+## 💡 核心技術
 
-- 基於 UID + SEQUENCE + 內容指紋
-- 增量同步，避免重複處理
-- 三方比對 (源檔案 vs 本地快照 vs Google Calendar)
+- **週期事件處理**: 完整支援 RFC 5545 RRULE 規範，包含 UNTIL 日期處理
+- **智能變更偵測**: 基於 UID + SEQUENCE + 內容指紋的三方比對
+- **時區精準處理**: 完整的 VTIMEZONE 解析和夏令時間轉換
+- **孤兒事件清理**: 自動檢測和清理過期的週期事件實例
 
-### 時區精準處理
+## 🔐 認證方式
 
-- 完整的 VTIMEZONE 解析
-- 自動處理夏令時間轉換
-- 跨時區事件正確同步
+| 方式 | 適用場景 | 優點 | 缺點 |
+|------|----------|------|------|
+| **OAuth** | 個人使用、測試 | 簡單設置、存取個人行事曆 | 需定期重新授權 |
+| **服務帳號** | 生產環境、自動化 | 長期穩定、Docker 友善 | 需要分享行事曆權限 |
 
-### 狀態管理
-
-- SQLite 本地資料庫
-- 完整的同步歷史記錄
-- 事件映射關係追蹤
-
-## 故障排除
-
-### 常見問題
-
-1. **認證失敗**
-   - 確認 `config/credentials.json` 檔案存在且正確
-   - 檢查 Google Calendar API 是否已啟用
-
-2. **ICS 獲取失敗**
-   - 確認 ICS URL 可以正常存取
-   - 檢查網路連線和防火牆設定
-
-3. **事件解析錯誤**
-   - 檢查日誌檔案 `logs/calendar_sync.log`
-   - 某些格式錯誤的事件會被跳過但不影響整體同步
-
-### 日誌查看
+## 📊 監控與維護
 
 ```bash
-# 查看最新日誌
-tail -f logs/calendar_sync.log
+# 檢查同步狀態
+python show_sync_state.py
 
-# 查看錯誤日誌
-grep ERROR logs/calendar_sync.log
+# 查看 Google Calendar 清單
+python get_calendar_list.py
+
+# 清理資料庫
+python clean_database.py
 ```
 
-## 安全性
+## 🤝 貢獻
 
-- Google API 認證資訊安全存儲
-- 僅請求必要的 Calendar API 權限
-- 本地資料庫僅存儲同步狀態，不含敏感資訊
+歡迎提交 Issue 和 Pull Request！請參考 [貢獻指南](docs/contributing.md)。
 
-## 授權
+## 📄 授權
 
-MIT License
+MIT License - 詳見 [LICENSE](LICENSE) 檔案。
+
+---
+
+## 🔗 快速連結
+
+- [📖 完整文件](docs/)
+- [🐳 Docker 部署](docs/deployment_guide.md)
+- [🔧 故障排除](docs/troubleshooting.md)
+- [⚙️ API 參考](docs/api_reference.md)
