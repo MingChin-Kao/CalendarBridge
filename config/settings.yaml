@@ -1,18 +1,18 @@
-# Calendar Sync Configuration
+# CalendarBridge Configuration
 
 # Source ICS configuration
 source:
   url: "https://msx.itri.org.tw/OWA/calendar/f55abdc79f004d60b8fa0d00d5a3462f@itri.org.tw/f5e56d38476148e1a4e703c72d04b0be10407649746860206970/calendar.ics"
   timeout: 30
   retry_count: 3
-  user_agent: "Calendar-Sync/1.0"
+  user_agent: "CalendarBridge/1.0"
 
 # Google Calendar configuration
 google_calendar:
-  calendar_id: "879df34e2d1e2756717236682658c9c81a80e2a0005d1e9eda9b37dade6b087c@group.calendar.google.com"  # 或指定特定的行事曆 ID
+  calendar_id: "e6b69c4fef90d9d1683feff5394c0ae8c9f1ca3a81177ebbaf2263f6f973b848@group.calendar.google.com"  # 或指定特定的行事曆 ID
   credentials_file: "config/credentials.json"
   token_file: "config/token.json"
-  application_name: "Calendar Sync Tool"
+  application_name: "CalendarBridge"
 
 # Sync configuration
 sync:
@@ -31,7 +31,7 @@ database:
 # Logging configuration
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR
-  file: "logs/calendar_sync.log"
+  file: "logs/calendarbridge.log"
   max_size_mb: 10
   backup_count: 5
   console: true
@@ -40,5 +40,5 @@ logging:
 processing:
   timezone: "Asia/Taipei"
   event_prefix: "[ITRI] "  # 事件標題前綴
-  description_suffix: "\n\n--- 由 Calendar Sync 工具同步 ---"
+  description_suffix: "\n\n--- 由 CalendarBridge 同步 ---"
   max_description_length: 8000

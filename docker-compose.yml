@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  calendarbridge:
+    build: .
+    container_name: calendarbridge
+    restart: unless-stopped
+    
+    volumes:
+      # 資料持久化
+      - ./data:/app/data
+      - ./logs:/app/logs
+      
+      # 認證檔案掛載（二選一）
+      # OAuth 方式：掛載 token.json
+      - ./config/token.json:/app/config/token.json:ro
+      - ./config/credentials.json:/app/config/credentials.json:ro
+      
+      # 服務帳號方式：掛載 service account key
+      # - ./config/service_account.json:/app/config/service_account.json:ro
+    
+    environment:
+      - TZ=Asia/Taipei
+      - PYTHONUNBUFFERED=1
+    
+    # 資源限制
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    
+    # 日誌配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# 網路配置（如果需要）
+networks:
+  default:
+    name: calendarbridge-network
