@@ -10,7 +10,7 @@ source:
   url: "your-ics-url"
   timeout: 30
   retry_count: 3
-  user_agent: "Calendar-Sync/1.0"
+  user_agent: "CalendarBridge/1.0"
 
 # Google Calendar 設定
 google_calendar:
@@ -33,8 +33,8 @@ sync:
 # 事件處理設定
 processing:
   timezone: "Asia/Taipei"
-  event_prefix: "[ITRI] "
-  description_suffix: "\n\n--- 由 Calendar Sync 工具同步 ---"
+  event_prefix: ""
+  description_suffix: "\n\n--- 由 CalendarBridge 同步 ---"
 
 # 資料庫設定
 database:
@@ -59,7 +59,7 @@ logging:
 | `url` | string | - | **必填**。ICS 檔案的 URL |
 | `timeout` | int | 30 | HTTP 請求超時時間（秒） |
 | `retry_count` | int | 3 | 失敗重試次數 |
-| `user_agent` | string | "Calendar-Sync/1.0" | HTTP User-Agent 標頭 |
+| `user_agent` | string | "CalendarBridge/1.0" | HTTP User-Agent 標頭 |
 
 **範例：**
 ```yaml
@@ -236,7 +236,7 @@ sync:
 
 processing:
   timezone: "Asia/Taipei"
-  event_prefix: "[ITRI] "
+  event_prefix: ""
 
 database:
   path: "/app/data/sync_state.db"
