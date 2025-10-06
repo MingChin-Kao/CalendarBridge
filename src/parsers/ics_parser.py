@@ -4,7 +4,7 @@ ICS 精準解析器
 """
 import hashlib
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import List, Dict, Optional, Tuple, Any
 from zoneinfo import ZoneInfo
 import requests
@@ -64,19 +64,13 @@ class EventData:
     def _process_time_info(self):
         """處理時間資訊，確保時區正確性"""
         if self.dtstart:
-            if hasattr(self.dtstart.dt, 'date') and not hasattr(self.dtstart.dt, 'hour'):
-                # 全天事件
-                self.all_day = True
-                self.start_datetime = self.dtstart.dt
-                if self.dtend:
-                    self.end_datetime = self.dtend.dt
-                elif self.duration:
-                    self.end_datetime = self.start_datetime + self.duration.dt
-                else:
-                    self.end_datetime = self.start_datetime + timedelta(days=1)
-            else:
+            dt_value = self.dtstart.dt
+
+            # 判斷是否為全天事件：date 物件而非 datetime 物件
+            if isinstance(dt_value, datetime):
                 # 有時間的事件
-                self.start_datetime = self.dtstart.dt
+                self.all_day = False
+                self.start_datetime = dt_value
                 if self.dtend:
                     self.end_datetime = self.dtend.dt
                 elif self.duration:
@@ -84,13 +78,23 @@ class EventData:
                 else:
                     # 預設1小時
                     self.end_datetime = self.start_datetime + timedelta(hours=1)
-                
+
                 # 確保時區資訊
                 if self.start_datetime.tzinfo is None:
                     logger.warning(f"Event {self.uid} has no timezone info, assuming Asia/Taipei")
                     taipei_tz = ZoneInfo("Asia/Taipei")
                     self.start_datetime = self.start_datetime.replace(tzinfo=taipei_tz)
                     self.end_datetime = self.end_datetime.replace(tzinfo=taipei_tz)
+            else:
+                # 全天事件（date 物件）
+                self.all_day = True
+                self.start_datetime = dt_value
+                if self.dtend:
+                    self.end_datetime = self.dtend.dt
+                elif self.duration:
+                    self.end_datetime = self.start_datetime + self.duration.dt
+                else:
+                    self.end_datetime = self.start_datetime + timedelta(days=1)
     
     def _extract_attendees(self, vevent: ICalEvent) -> List[Dict[str, str]]:
         """提取參與者資訊"""
@@ -337,14 +341,14 @@ class ICSParser:
         """
         ics_content = self.fetch_ics_content()
         main_events, modified_instances = self.parse_ics_content(ics_content)
-        
+
         # 篩選在時間範圍內的事件
         filtered_events = []
-        
+
         for event in main_events:
             if not event.is_recurring():
                 # 非週期事件，檢查是否在範圍內
-                if (event.start_datetime >= start_date and event.start_datetime <= end_date):
+                if self._is_event_in_range(event, start_date, end_date):
                     filtered_events.append(event)
             else:
                 # 週期事件：不展開，直接使用原始事件
@@ -352,17 +356,31 @@ class ICSParser:
                 # 只需要檢查週期事件的開始時間或者是否與範圍有交集
                 if self._recurring_event_overlaps_range(event, start_date, end_date):
                     filtered_events.append(event)
-        
+
         # 處理修改實例
         if modified_instances:
             logger.info(f"Adding {len(modified_instances)} modified instances")
             # 修改實例總是需要作為獨立事件處理
             for instance in modified_instances:
-                if (instance.start_datetime >= start_date and instance.start_datetime <= end_date):
+                if self._is_event_in_range(instance, start_date, end_date):
                     filtered_events.append(instance)
-        
+
         logger.info(f"Filtered to {len(filtered_events)} events (recurring events not expanded)")
         return filtered_events
+
+    def _is_event_in_range(self, event: EventData, start_date: datetime, end_date: datetime) -> bool:
+        """檢查事件是否在指定範圍內，處理 date 和 datetime 的比較"""
+        event_start = event.start_datetime
+
+        # 將 date 轉換為 datetime 以便比較
+        if isinstance(event_start, date) and not isinstance(event_start, datetime):
+            # 全天事件使用 date，將其轉為當天開始的 datetime
+            event_start = datetime.combine(event_start, datetime.min.time())
+            # 添加時區資訊以匹配 start_date 和 end_date
+            if start_date.tzinfo:
+                event_start = event_start.replace(tzinfo=start_date.tzinfo)
+
+        return event_start >= start_date and event_start <= end_date
     
     def _recurring_event_overlaps_range(self, event: EventData, start_date: datetime, end_date: datetime) -> bool:
         """檢查週期事件是否與指定範圍有重疊"""
