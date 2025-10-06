@@ -23,7 +23,7 @@ google_calendar:
 # 註解掉 OAuth 相關的 volume
 # 啟用 service_account.json volume
 
-docker-compose up -d
+docker compose up -d
 ```
 
 #### 優點
@@ -46,21 +46,21 @@ python setup.py
 #### 部署
 ```bash
 # 使用預設的 docker-compose.yml
-docker-compose up -d
+docker compose up -d
 ```
 
 #### 維護
 當 token 過期時：
 ```bash
 # 停止服務
-docker-compose stop
+docker compose stop
 
 # 重新授權
 rm config/token.json
 python setup.py
 
 # 重啟服務
-docker-compose start
+docker compose start
 ```
 
 #### 優點
@@ -80,19 +80,19 @@ docker-compose start
 #### 1. 認證失敗
 ```bash
 # 檢查認證狀態
-docker-compose exec calendarbridge python check_auth_status.py
+docker compose exec calendarbridge python check_auth_status.py
 
 # 查看日誌
-docker-compose logs calendarbridge
+docker compose logs calendarbridge
 ```
 
 #### 2. Token 過期
 ```bash
 # OAuth 方式：重新授權
-docker-compose stop
+docker compose stop
 rm config/token.json
 python setup.py
-docker-compose start
+docker compose start
 
 # 服務帳號方式：檢查金鑰檔案
 ls -la config/service_account.json
@@ -107,7 +107,7 @@ ls -la config/service_account.json
 #### 健康檢查
 ```bash
 # 檢查容器狀態
-docker-compose ps
+docker compose ps
 
 # 檢查健康狀態
 docker inspect calendarbridge | grep Health -A 10
@@ -116,10 +116,10 @@ docker inspect calendarbridge | grep Health -A 10
 #### 日誌監控
 ```bash
 # 即時日誌
-docker-compose logs -f calendarbridge
+docker compose logs -f calendarbridge
 
 # 查看最近日誌
-docker-compose logs --tail 100 calendarbridge
+docker compose logs --tail 100 calendarbridge
 ```
 
 ### 資料備份
@@ -137,19 +137,19 @@ tar -czf calendarbridge-backup.tar.gz config/ data/
 
 ```bash
 # 停止服務
-docker-compose stop
+docker compose stop
 
 # 更新程式碼
 git pull
 
 # 重建映像
-docker-compose build
+docker compose build
 
 # 重啟服務
-docker-compose up -d
+docker compose up -d
 
 # 檢查狀態
-docker-compose logs -f calendarbridge
+docker compose logs -f calendarbridge
 ```
 
 ---

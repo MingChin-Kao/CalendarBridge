@@ -40,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # EXPOSE 8080
 
 # 啟動命令
-CMD ["python", "main.py", "--continuous"]
+CMD ["python", "main.py"]

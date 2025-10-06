@@ -10,14 +10,14 @@ services:
       # 資料持久化
       - ./data:/app/data
       - ./logs:/app/logs
-      
+
       # 認證檔案掛載（二選一）
       # OAuth 方式：掛載 token.json
-      - ./config/token.json:/app/config/token.json:ro
-      - ./config/credentials.json:/app/config/credentials.json:ro
-      
+      # - ./config/token.json:/app/config/token.json:ro
+      # - ./config/credentials.json:/app/config/credentials.json:ro
+
       # 服務帳號方式：掛載 service account key
-      # - ./config/service_account.json:/app/config/service_account.json:ro
+      - ./config/service_account.json:/app/config/service_account.json:ro
     
     environment:
       - TZ=Asia/Taipei

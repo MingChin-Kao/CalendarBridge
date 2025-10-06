@@ -26,7 +26,7 @@ COPY config/credentials.json config/
 
 # 不要複製 token.json - 通過 volume 掛載
 
-CMD ["python", "main.py", "--continuous"]
+CMD ["python", "main.py"]
 ```
 
 ### 步驟 3: Docker Compose 配置
@@ -49,10 +49,10 @@ services:
 ```bash
 #!/bin/bash
 # renew_auth.sh
-docker-compose stop calendarbridge
+docker compose stop calendarbridge
 rm -f config/token.json
 python setup.py  # 重新授權
-docker-compose start calendarbridge
+docker compose start calendarbridge
 ```
 
 ## 優點

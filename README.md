@@ -41,8 +41,8 @@ python main.py --once --dry-run
 # 執行一次同步
 python main.py --once
 
-# 持續同步模式
-python main.py --continuous
+# 持續同步模式（預設）
+python main.py
 ```
 
 ## 📖 詳細文件
@@ -87,13 +87,13 @@ CalendarBridge/
 ```bash
 # 簡單的 OAuth 認證
 python setup.py
-python main.py --continuous
+python main.py
 ```
 
 ### 生產環境
 ```bash
 # 使用服務帳號認證 + Docker
-docker-compose up -d
+docker compose up -d
 ```
 
 ## 💡 核心技術
