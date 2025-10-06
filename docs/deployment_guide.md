@@ -7,14 +7,21 @@
 #### 準備工作
 1. 按照 `service_account_setup.md` 設置服務帳號
 2. 下載 `service_account.json` 到 `config/` 目錄
+3. 複製並編輯配置檔案：
+```bash
+cp config/settings.yaml.template config/settings.yaml
+```
 
 #### 配置
-修改 `config/settings.yaml`：
+編輯 `config/settings.yaml`：
 ```yaml
+source:
+  url: "your-ics-calendar-url"  # 填入您的 ICS URL
+
 google_calendar:
   auth_type: "service_account"
   service_account_file: "config/service_account.json"
-  calendar_id: "your-calendar-id"
+  calendar_id: "your-calendar-id@group.calendar.google.com"  # 填入您的 Calendar ID
 ```
 
 #### 部署

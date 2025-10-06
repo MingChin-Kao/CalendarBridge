@@ -38,6 +38,7 @@ Thumbs.db
 config/credentials.json
 config/token.json
 config/service_account.json
+config/settings.yaml  # Contains sensitive URLs and calendar IDs
 
 # Database files
 data/

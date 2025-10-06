@@ -28,7 +28,11 @@ source venv/bin/activate
 # 3. 安裝依賴
 pip install -r requirements.txt
 
-# 4. 初始化設置
+# 4. 複製並編輯配置檔案
+cp config/settings.yaml.template config/settings.yaml
+# 編輯 config/settings.yaml，填入您的 ICS URL 和 Calendar ID
+
+# 5. 初始化設置（設定 Google 認證）
 python setup.py
 ```
 
