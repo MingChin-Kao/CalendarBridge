@@ -159,16 +159,22 @@ class GoogleCalendarClient:
         google_event = self._convert_to_google_event(event_data)
         
         try:
+            # 記錄事件詳情以便調試
+            if 'recurrence' in google_event:
+                logger.debug(f"Creating event with recurrence: {google_event['recurrence']}")
+
             created_event = self.service.events().insert(
                 calendarId=calendar_id,
                 body=google_event
             ).execute()
-            
+
             logger.info(f"Created event: {created_event.get('id')} - {event_data.summary}")
             return created_event
-            
+
         except HttpError as e:
             logger.error(f"Failed to create event {event_data.uid}: {e}")
+            if 'recurrence' in google_event:
+                logger.error(f"Problematic recurrence rule: {google_event['recurrence']}")
             raise
     
     def update_event(self, google_event_id: str, event_data: EventData, 
@@ -283,10 +289,39 @@ class GoogleCalendarClient:
                         exdate_list = event_data.exdate if isinstance(event_data.exdate, list) else [event_data.exdate]
                         for exdate in exdate_list:
                             try:
-                                exdate_str = exdate.to_ical().decode() if hasattr(exdate, 'to_ical') else str(exdate)
-                                google_event['recurrence'].append(f'EXDATE:{exdate_str}')
+                                # 處理 EXDATE，需要提取實際的日期時間
+                                if hasattr(exdate, 'dt'):
+                                    exdate_dt = exdate.dt
+                                elif hasattr(exdate, 'to_ical'):
+                                    exdate_str = exdate.to_ical().decode()
+                                    google_event['recurrence'].append(f'EXDATE:{exdate_str}')
+                                    logger.debug(f"Added EXDATE: {exdate_str}")
+                                    continue
+                                else:
+                                    exdate_dt = exdate
+
+                                # 格式化為 Google Calendar 接受的格式
+                                # 最安全的方式是轉換為 UTC 時間
+                                from datetime import datetime, date
+                                if isinstance(exdate_dt, datetime):
+                                    # 轉換為 UTC 時間（Google Calendar 推薦的格式）
+                                    if exdate_dt.tzinfo:
+                                        exdate_utc = exdate_dt.astimezone(None).astimezone(__import__('datetime').timezone.utc)
+                                    else:
+                                        exdate_utc = exdate_dt
+
+                                    exdate_str = exdate_utc.strftime('%Y%m%dT%H%M%SZ')
+                                    google_event['recurrence'].append(f'EXDATE:{exdate_str}')
+                                    logger.debug(f"Added EXDATE with time: {exdate_str}")
+                                elif isinstance(exdate_dt, date):
+                                    # 只有日期的 EXDATE（全天事件）
+                                    exdate_str = exdate_dt.strftime('%Y%m%d')
+                                    google_event['recurrence'].append(f'EXDATE;VALUE=DATE:{exdate_str}')
+                                    logger.debug(f"Added EXDATE date only: {exdate_str}")
+                                else:
+                                    logger.warning(f"Unknown EXDATE type: {type(exdate_dt)}")
                             except Exception as ex_e:
-                                logger.warning(f"Failed to process EXDATE: {ex_e}")
+                                logger.warning(f"Failed to process EXDATE {exdate}: {ex_e}")
                         
             except Exception as e:
                 logger.warning(f"Failed to convert RRULE for event {event_data.uid}: {e}")

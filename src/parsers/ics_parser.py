@@ -342,6 +342,55 @@ class ICSParser:
         ics_content = self.fetch_ics_content()
         main_events, modified_instances = self.parse_ics_content(ics_content)
 
+        # 為週期事件建立修改實例的映射（用於添加 EXDATE）
+        # 同時建立原始事件的時間映射
+        main_events_map = {event.uid: event for event in main_events}
+        modified_instances_map = {}
+
+        for instance in modified_instances:
+            if instance.recurrence_id:
+                if instance.uid not in modified_instances_map:
+                    modified_instances_map[instance.uid] = []
+
+                # 需要將 RECURRENCE-ID 調整為與原始事件的時間匹配
+                # 因為 EXDATE 必須精確匹配週期事件實例的時間
+                recurrence_dt = instance.recurrence_id.dt if hasattr(instance.recurrence_id, 'dt') else instance.recurrence_id
+
+                # 如果原始事件存在，使用原始事件的時間部分
+                if instance.uid in main_events_map:
+                    original_event = main_events_map[instance.uid]
+                    original_time = original_event.start_datetime
+
+                    # 組合 RECURRENCE-ID 的日期與原始事件的時間
+                    from datetime import datetime, date
+                    if isinstance(recurrence_dt, datetime):
+                        # 保留 RECURRENCE-ID 的日期，使用原始事件的時間
+                        if isinstance(original_time, datetime):
+                            adjusted_dt = recurrence_dt.replace(
+                                hour=original_time.hour,
+                                minute=original_time.minute,
+                                second=original_time.second,
+                                microsecond=0
+                            )
+                            # 如果原始有時區，確保調整後的也有
+                            if original_time.tzinfo and not adjusted_dt.tzinfo:
+                                adjusted_dt = adjusted_dt.replace(tzinfo=original_time.tzinfo)
+
+                            # 創建一個新的 vDDDTypes 對象
+                            from icalendar import vDDDTypes
+                            adjusted_recurrence_id = vDDDTypes(adjusted_dt)
+                            modified_instances_map[instance.uid].append(adjusted_recurrence_id)
+                            logger.debug(f"Adjusted RECURRENCE-ID from {recurrence_dt} to {adjusted_dt}")
+                        else:
+                            # 原始事件是全天事件，保持 RECURRENCE-ID 原樣
+                            modified_instances_map[instance.uid].append(instance.recurrence_id)
+                    else:
+                        # RECURRENCE-ID 是 date 類型，保持原樣
+                        modified_instances_map[instance.uid].append(instance.recurrence_id)
+                else:
+                    # 找不到原始事件，保持 RECURRENCE-ID 原樣
+                    modified_instances_map[instance.uid].append(instance.recurrence_id)
+
         # 篩選在時間範圍內的事件
         filtered_events = []
 
@@ -351,18 +400,30 @@ class ICSParser:
                 if self._is_event_in_range(event, start_date, end_date):
                     filtered_events.append(event)
             else:
-                # 週期事件：不展開，直接使用原始事件
-                # Google Calendar 會自動展開週期事件
-                # 只需要檢查週期事件的開始時間或者是否與範圍有交集
+                # 週期事件：檢查是否有修改實例需要排除
+                if event.uid in modified_instances_map:
+                    # 將修改實例的日期加入 EXDATE
+                    if event.exdate is None:
+                        event.exdate = modified_instances_map[event.uid]
+                    else:
+                        # 如果已有 EXDATE，合併
+                        existing_exdates = event.exdate if isinstance(event.exdate, list) else [event.exdate]
+                        event.exdate = existing_exdates + modified_instances_map[event.uid]
+                    logger.info(f"Added {len(modified_instances_map[event.uid])} EXDATE(s) to recurring event {event.uid}")
+
+                # 檢查週期事件是否與範圍有交集
                 if self._recurring_event_overlaps_range(event, start_date, end_date):
                     filtered_events.append(event)
 
         # 處理修改實例
         if modified_instances:
             logger.info(f"Adding {len(modified_instances)} modified instances")
-            # 修改實例總是需要作為獨立事件處理
+            # 修改實例作為獨立的單次事件（不是週期事件）
             for instance in modified_instances:
                 if self._is_event_in_range(instance, start_date, end_date):
+                    # 確保修改實例沒有週期規則（應該是單次事件）
+                    instance.rrule = None
+                    instance.rdate = None
                     filtered_events.append(instance)
 
         logger.info(f"Filtered to {len(filtered_events)} events (recurring events not expanded)")
