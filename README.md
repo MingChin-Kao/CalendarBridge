@@ -48,9 +48,9 @@ docker compose up -d
 ```
 
 **🔗 完整設置指南**：
-1. [Google Cloud 專案設置](docs/google_cloud_setup.md)
-2. [服務帳號認證設置](docs/service_account_setup.md)
-3. [Docker 部署指南](docs/deployment_guide.md)
+1. [認證方式概覽](docs/authentication/overview.md)
+2. [服務帳號認證設置](docs/authentication/service_account.md)
+3. [Docker 部署指南](docs/deployment/docker.md)
 
 ---
 
@@ -80,26 +80,26 @@ python main.py                   # 持續同步
 ```
 
 **🔗 設置指南**：
-- [OAuth 認證設置](docs/google_api_setup.md#oauth-認證詳細步驟)
+- [OAuth 認證設置](docs/authentication/oauth.md)
 
 ## 📖 詳細文件
 
-### 🚀 基礎設置
-- **[Google Cloud 專案設置](docs/google_cloud_setup.md)** - 建立 Google Cloud 專案和啟用 API
-- **[認證方式選擇指南](docs/google_api_setup.md)** - OAuth 和服務帳號認證比較
+### 🚀 快速開始
+- **[文件導覽](docs/README.md)** - 從這裡開始，找到您需要的文件
+- **[快速開始指南](docs/quickstart.md)** - 5 分鐘快速上手
 
-### 🔐 認證設置（選擇其一）
-- **[服務帳號設置](docs/service_account_setup.md)** - 生產環境推薦的認證方式 ⭐
-- **[OAuth 認證設置](docs/google_api_setup.md#oauth-認證詳細步驟)** - 個人開發使用
+### 🔐 認證設置
+- **[認證方式概覽](docs/authentication/overview.md)** - Google Cloud 設置與認證方式比較
+- **[服務帳號設置](docs/authentication/service_account.md)** - 生產環境推薦 ⭐
+- **[OAuth 認證設置](docs/authentication/oauth.md)** - 個人開發使用
 
 ### 🐳 部署方案
-- **[Docker 部署指南](docs/deployment_guide.md)** - 完整的 Docker 部署流程 ⭐
-- **[Docker OAuth 設置](docs/docker_oauth_setup.md)** - 使用 OAuth 的 Docker 部署方式
+- **[本地部署指南](docs/deployment/local.md)** - 在本機運行
+- **[Docker 部署指南](docs/deployment/docker.md)** - 容器化部署 ⭐
 
-### ⚙️ 配置與維護
-- **[配置檔案說明](docs/configuration.md)** - 詳細的設定選項說明
-- **[故障排除指南](docs/troubleshooting.md)** - 常見問題與解決方案
-- **[API 參考](docs/api_reference.md)** - 程式模組與 API 說明
+### ⚙️ 參考資料
+- **[配置檔案說明](docs/reference/configuration.md)** - 詳細的設定選項說明
+- **[疑難排解指南](docs/reference/troubleshooting.md)** - 常見問題與解決方案
 
 ## 🏗️ 專案結構
 
@@ -183,12 +183,11 @@ MIT License - 詳見 [LICENSE](LICENSE) 檔案。
 ## 🔗 快速連結
 
 ### 📚 文檔導航
-- [📖 完整文件目錄](docs/)
-- [🚀 Google Cloud 設置](docs/google_cloud_setup.md) - 開始第一步
-- [🔐 服務帳號設置](docs/service_account_setup.md) - 推薦認證方式
-- [🐳 Docker 部署](docs/deployment_guide.md) - 生產環境部署
+- [📖 文件導覽](docs/README.md) - 完整文件目錄
+- [🚀 快速開始](docs/quickstart.md) - 5 分鐘上手指南
+- [🔐 認證概覽](docs/authentication/overview.md) - 選擇認證方式
+- [🐳 Docker 部署](docs/deployment/docker.md) - 生產環境部署
 
 ### 🛠️ 工具與維護
-- [🔧 故障排除](docs/troubleshooting.md)
-- [⚙️ API 參考](docs/api_reference.md)
-- [📝 配置說明](docs/configuration.md)
+- [🔧 疑難排解](docs/reference/troubleshooting.md)
+- [📝 配置說明](docs/reference/configuration.md)
