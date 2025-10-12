@@ -14,53 +14,90 @@
 
 ## 🚀 快速開始
 
-### 基本設置
+### 📋 開始前準備
+
+在開始使用 CalendarBridge 之前，請先選擇適合的部署方式：
+
+| 部署方式 | 適用場景 | 推薦程度 |
+|---------|----------|----------|
+| **🐳 Docker + 服務帳號** | 生產環境、自動化部署 | ⭐⭐⭐⭐⭐ |
+| **🔧 本地 + OAuth** | 個人開發、測試 | ⭐⭐⭐ |
+
+---
+
+### 🏆 方案一：Docker 部署（推薦）
+
+**適合**：生產環境、長期穩定運行、自動化部署
 
 ```bash
 # 1. 克隆專案
 git clone <repository-url>
 cd CalendarBridge
 
-# 2. 建立虛擬環境
-python3 -m venv venv
-source venv/bin/activate
+# 2. 設置認證（詳見下方連結）
+# - 完成 Google Cloud 專案設置
+# - 設置服務帳號認證
+# - 分享目標行事曆給服務帳號
 
-# 3. 安裝依賴
-pip install -r requirements.txt
-
-# 4. 複製並編輯配置檔案
+# 3. 配置應用程式
 cp config/settings.yaml.template config/settings.yaml
-# 編輯 config/settings.yaml，填入您的 ICS URL 和 Calendar ID
+# 編輯 config/settings.yaml，填入 ICS URL 和 Calendar ID
 
-# 5. 初始化設置（設定 Google 認證）
-python setup.py
+# 4. 啟動服務
+docker compose up -d
 ```
 
-### 執行同步
+**🔗 完整設置指南**：
+1. [Google Cloud 專案設置](docs/google_cloud_setup.md)
+2. [服務帳號認證設置](docs/service_account_setup.md)
+3. [Docker 部署指南](docs/deployment_guide.md)
+
+---
+
+### 🔧 方案二：本地開發
+
+**適合**：個人測試、開發環境、快速驗證
 
 ```bash
-# 測試模式（不實際執行）
-python main.py --once --dry-run
+# 1. 克隆專案並設置環境
+git clone <repository-url>
+cd CalendarBridge
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-# 執行一次同步
-python main.py --once
+# 2. 配置檔案
+cp config/settings.yaml.template config/settings.yaml
+# 編輯 config/settings.yaml，填入 ICS URL
 
-# 持續同步模式（預設）
-python main.py
+# 3. 設置 OAuth 認證
+python setup.py
+
+# 4. 執行同步
+python main.py --once --dry-run  # 測試模式
+python main.py --once            # 執行一次
+python main.py                   # 持續同步
 ```
+
+**🔗 設置指南**：
+- [OAuth 認證設置](docs/google_api_setup.md#oauth-認證詳細步驟)
 
 ## 📖 詳細文件
 
-### 🔧 設置與配置
-- **[Google Calendar API 設置](docs/google_api_setup.md)** - OAuth 和服務帳號設置指南
-- **[配置檔案說明](docs/configuration.md)** - 詳細的設定選項說明
+### 🚀 基礎設置
+- **[Google Cloud 專案設置](docs/google_cloud_setup.md)** - 建立 Google Cloud 專案和啟用 API
+- **[認證方式選擇指南](docs/google_api_setup.md)** - OAuth 和服務帳號認證比較
+
+### 🔐 認證設置（選擇其一）
+- **[服務帳號設置](docs/service_account_setup.md)** - 生產環境推薦的認證方式 ⭐
+- **[OAuth 認證設置](docs/google_api_setup.md#oauth-認證詳細步驟)** - 個人開發使用
 
 ### 🐳 部署方案
-- **[Docker 部署指南](docs/deployment_guide.md)** - 完整的 Docker 部署流程
-- **[服務帳號設置](docs/service_account_setup.md)** - 生產環境推薦的認證方式
-- **[OAuth Docker 設置](docs/docker_oauth_setup.md)** - 使用 OAuth 的 Docker 部署方式
+- **[Docker 部署指南](docs/deployment_guide.md)** - 完整的 Docker 部署流程 ⭐
+- **[Docker OAuth 設置](docs/docker_oauth_setup.md)** - 使用 OAuth 的 Docker 部署方式
 
-### 🔧 維護與故障排除
+### ⚙️ 配置與維護
+- **[配置檔案說明](docs/configuration.md)** - 詳細的設定選項說明
 - **[故障排除指南](docs/troubleshooting.md)** - 常見問題與解決方案
 - **[API 參考](docs/api_reference.md)** - 程式模組與 API 說明
 
@@ -87,18 +124,24 @@ CalendarBridge/
 
 ## 🎯 使用情境
 
-### 個人使用
-```bash
-# 簡單的 OAuth 認證
-python setup.py
-python main.py
-```
-
-### 生產環境
+### 🏢 生產環境（推薦）
 ```bash
 # 使用服務帳號認證 + Docker
 docker compose up -d
 ```
+- ✅ 長期穩定運行
+- ✅ 無需定期重新授權
+- ✅ 完全自動化
+
+### 👨‍💻 個人開發
+```bash
+# OAuth 認證 + 本地運行
+python setup.py
+python main.py
+```
+- ✅ 快速設置
+- ✅ 存取個人所有行事曆
+- ⚠️ 需定期重新授權
 
 ## 💡 核心技術
 
@@ -139,7 +182,13 @@ MIT License - 詳見 [LICENSE](LICENSE) 檔案。
 
 ## 🔗 快速連結
 
-- [📖 完整文件](docs/)
-- [🐳 Docker 部署](docs/deployment_guide.md)
+### 📚 文檔導航
+- [📖 完整文件目錄](docs/)
+- [🚀 Google Cloud 設置](docs/google_cloud_setup.md) - 開始第一步
+- [🔐 服務帳號設置](docs/service_account_setup.md) - 推薦認證方式
+- [🐳 Docker 部署](docs/deployment_guide.md) - 生產環境部署
+
+### 🛠️ 工具與維護
 - [🔧 故障排除](docs/troubleshooting.md)
 - [⚙️ API 參考](docs/api_reference.md)
+- [📝 配置說明](docs/configuration.md)

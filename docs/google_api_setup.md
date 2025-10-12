@@ -1,27 +1,62 @@
-# Google Calendar API 設置指南
+# Google Calendar API 認證指南
 
-本指南將協助您設置 Google Calendar API，包含 OAuth 和服務帳號兩種認證方式。
+本指南將協助您選擇並設置適合的 Google Calendar API 認證方式。
+
+## 📋 開始之前
+
+在進行認證設置之前，請先完成 [Google Cloud 專案設置](google_cloud_setup.md)。
+
+## 📊 認證方式比較
+
+| 特性 | 服務帳號認證（推薦） | OAuth 認證 |
+|------|------------------|------------|
+| **適用場景** | 自動化部署、Docker 環境 | 個人開發、測試 |
+| **使用者互動** | ❌ 無需使用者授權 | ✅ 需要瀏覽器授權 |
+| **Token 管理** | ❌ 無 Token 過期問題 | ⚠️ Token 會過期需重新授權 |
+| **行事曆存取** | ⚠️ 需要明確分享行事曆 | ✅ 可存取個人所有行事曆 |
+| **安全性** | ✅ 服務帳號金鑰管理 | ✅ OAuth 標準流程 |
+| **維護成本** | ✅ 低，設定後免維護 | ⚠️ 高，需定期重新授權 |
+| **Docker 友善** | ✅ 完全支援 | ⚠️ 需要預先授權 |
+
+### 🏆 推薦選擇
+
+- **生產環境、Docker 部署**: 選擇 **服務帳號認證**
+- **個人開發、快速測試**: 選擇 **OAuth 認證**
+
+## 🏢 服務帳號認證（推薦）
+
+**適用於**：生產環境、Docker 部署、自動化系統
+
+**完整設置指南**：[服務帳號設置指南](service_account_setup.md)
+
+**特點**：
+- ✅ 無需使用者互動
+- ✅ 適合自動化部署
+- ✅ 長期穩定運行
+- ✅ 無 Token 過期問題
+- ⚠️ 需要明確分享行事曆
 
 ## 🔧 OAuth 認證設置（個人使用）
 
-### 步驟 1: 建立 Google Cloud 專案
+**適用於**：個人開發、快速測試、存取個人行事曆
 
-1. 前往 [Google Cloud Console](https://console.cloud.google.com/)
-2. 點擊專案下拉選單，選擇「新增專案」
-3. 輸入專案名稱（例如：「CalendarBridge」）
-4. 記下專案 ID，稍後會用到
+**完整設置指南**：[OAuth 認證詳細步驟](google_api_setup.md#oauth-認證詳細步驟)
 
-### 步驟 2: 啟用 Google Calendar API
+**特點**：
+- ✅ 可存取個人所有行事曆
+- ✅ 設置相對簡單
+- ⚠️ 需要瀏覽器授權
+- ⚠️ Token 會過期需重新授權
 
-1. 在 Google Cloud Console 中，確保已選擇正確的專案
-2. 導航到「APIs & Services」→「Library」
-3. 搜尋「Google Calendar API」
-4. 點擊「Google Calendar API」
-5. 點擊「啟用」按鈕
+---
 
-### 步驟 3: 建立 OAuth 認證
+## OAuth 認證詳細步驟
 
-1. 導航到「APIs & Services」→「Credentials」
+### 步驟 1: 建立 OAuth 認證
+
+> 💡 **前置需求**：確保已完成 [Google Cloud 專案設置](google_cloud_setup.md)
+
+1. 在 Google Cloud Console 中，導航到「APIs & Services」→「Credentials」
 2. 點擊「+ CREATE CREDENTIALS」
 3. 選擇「OAuth 2.0 Client IDs」
 4. 如果是第一次建立，需要先配置 OAuth 同意畫面：
@@ -50,7 +85,7 @@
 mv ~/Downloads/client_secret_*.json config/credentials.json
 ```
 
-### 步驟 4: 初次授權
+### 步驟 2: 初次授權
 
 ```bash
 # 執行設置腳本
@@ -71,81 +106,6 @@ print('認證成功！')
 1. 登入 Google 帳號
 2. 授權應用程式存取您的 Google Calendar
 3. 完成後會自動產生 `config/token.json`
-
-## 🏢 服務帳號認證設置（生產環境推薦）
-
-服務帳號適合自動化和 Docker 環境，無需使用者互動。
-
-### 步驟 1: 建立服務帳號
-
-1. 在 Google Cloud Console 中，導航到「IAM & Admin」→「Service Accounts」
-2. 點擊「+ CREATE SERVICE ACCOUNT」
-3. 填寫服務帳號詳情：
-   - 服務帳號名稱：`calendarbridge-service`
-   - 服務帳號 ID：會自動產生
-   - 描述：`CalendarBridge Service Account`
-4. 點擊「CREATE AND CONTINUE」
-5. 跳過權限設定（點擊「CONTINUE」）
-6. 點擊「DONE」
-
-### 步驟 2: 建立服務帳號金鑰
-
-1. 在服務帳號列表中，點擊剛建立的服務帳號
-2. 切換到「KEYS」標籤
-3. 點擊「ADD KEY」→「Create new key」
-4. 選擇「JSON」格式
-5. 點擊「CREATE」
-6. JSON 金鑰檔案會自動下載
-7. 將檔案重新命名並移到專案目錄：
-
-```bash
-mv ~/Downloads/your-project-*.json config/service_account.json
-```
-
-### 步驟 3: 分享行事曆給服務帳號
-
-由於服務帳號無法存取您的個人行事曆，需要明確分享：
-
-1. 開啟 [Google Calendar](https://calendar.google.com/)
-2. 在左側行事曆列表中，找到要同步的目標行事曆
-3. 點擊行事曆旁的三點選單 → 「設定與共用」
-4. 在「與特定人員共用」區域：
-   - 點擊「新增人員」
-   - 輸入服務帳號的電子郵件地址
-     （格式：`calendarbridge-service@your-project-id.iam.gserviceaccount.com`）
-   - 權限選擇「進行變更和管理共用設定」
-   - 點擊「傳送」
-
-### 步驟 4: 取得行事曆 ID
-
-1. 在 Google Calendar 中，點擊目標行事曆的設定
-2. 向下捲動找到「行事曆 ID」
-3. 複製行事曆 ID（類似：`abc123@group.calendar.google.com`）
-
-### 步驟 5: 配置應用程式
-
-修改 `config/settings.yaml`：
-
-```yaml
-google_calendar:
-  auth_type: "service_account"
-  service_account_file: "config/service_account.json"
-  calendar_id: "your-calendar-id@group.calendar.google.com"
-```
-
-### 步驟 6: 測試服務帳號認證
-
-```bash
-python -c "
-from src.clients.google_calendar import GoogleCalendarClient
-from src.utils.config import load_config
-config = load_config('config/settings.yaml')
-client = GoogleCalendarClient(config.google_calendar)
-client.authenticate()
-cal_info = client.get_calendar_info()
-print(f'成功連接到行事曆: {cal_info.get(\"summary\", \"Unknown\")}')
-"
-```
 
 ## 🔍 疑難排解
 
