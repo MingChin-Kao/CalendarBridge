@@ -1,0 +1,44 @@
+# CalendarBridge Configuration
+
+# Source ICS configuration
+source:
+  url: "https://msx.itri.org.tw/OWA/calendar/f55abdc79f004d60b8fa0d00d5a3462f@itri.org.tw/f5e56d38476148e1a4e703c72d04b0be10407649746860206970/calendar.ics"
+  timeout: 30
+  retry_count: 3
+  user_agent: "CalendarBridge/1.0"
+
+# Google Calendar configuration
+google_calendar:
+  auth_type: "service_account"
+  service_account_file: "config/service_account.json"
+  calendar_id: "83f0d6e0d3272e523430b991b3f3521b00f4e3c964d6bd8c7381115c60bc9194@group.calendar.google.com"
+  application_name: "CalendarBridge"
+
+# Sync configuration
+sync:
+  interval_minutes: 30  # 同步間隔 (分鐘)
+  max_events_per_batch: 100
+  lookahead_days: 365  # 向前同步天數
+  lookbehind_days: 30   # 向後同步天數 (處理修改)
+  enable_delete: true   # 是否刪除來源已移除的事件
+  conflict_resolution: "latest"  # latest, source, manual
+
+# Database configuration
+database:
+  path: "data/sync_state.db"
+  backup_count: 5
+
+# Logging configuration
+logging:
+  level: "DEBUG"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/calendarbridge.log"
+  max_size_mb: 10
+  backup_count: 5
+  console: true
+
+# Event processing
+processing:
+  timezone: "Asia/Taipei"
+  event_prefix: ""  # 事件標題前綴
+  description_suffix: "\n\n--- 由 CalendarBridge 同步 ---"
+  max_description_length: 8000
