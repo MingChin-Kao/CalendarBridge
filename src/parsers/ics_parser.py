@@ -136,11 +136,17 @@ class EventData:
         """計算事件指紋，用於變更偵測"""
         # 對於週期事件的個別實例，需要包含具體的日期時間
         content = f"{self.uid}|{self.sequence}|{self.summary}|{self.description}|{self.location}|{self.start_datetime}|{self.end_datetime}|{self.rrule}|{self.status}"
-        
+
+        # 包含 EXDATE 以偵測週期事件的例外變更
+        if self.exdate:
+            # 將 EXDATE 序列化為字串
+            exdate_str = str(self.exdate)
+            content += f"|{exdate_str}"
+
         # 如果是週期事件的特定實例，添加實例標識
         if self.recurrence_id:
             content += f"|{self.recurrence_id}"
-        
+
         return hashlib.md5(content.encode('utf-8')).hexdigest()
     
     def get_unique_event_id(self) -> str:
@@ -176,6 +182,14 @@ class EventData:
     
     def to_dict(self) -> Dict[str, Any]:
         """轉換為字典格式"""
+        # 序列化 EXDATE
+        exdate_serialized = None
+        if self.exdate:
+            if isinstance(self.exdate, list):
+                exdate_serialized = [self._safe_serialize_datetime(exd) for exd in self.exdate]
+            else:
+                exdate_serialized = self._safe_serialize_datetime(self.exdate)
+
         return {
             'uid': self.uid,
             'sequence': self.sequence,
@@ -188,6 +202,7 @@ class EventData:
             'all_day': self.all_day,
             'status': self.status,
             'rrule': str(self.rrule) if self.rrule else None,
+            'exdate': exdate_serialized,
             'recurrence_id': self._safe_serialize_datetime(self.recurrence_id),
             'attendees': self.attendees,
             'fingerprint': self.fingerprint
@@ -334,10 +349,11 @@ class ICSParser:
         logger.info(f"Expanded to {len(expanded_events)} event instances")
         return expanded_events
     
-    def parse_and_expand(self, start_date: datetime, end_date: datetime) -> List[EventData]:
+    def parse_and_expand(self, start_date: datetime, end_date: datetime) -> Tuple[List[EventData], List[EventData]]:
         """
         完整的解析和展開流程
         對於週期事件：不展開，保持原始事件以避免重複建立
+        返回: (所有事件列表, 修改實例列表)
         """
         ics_content = self.fetch_ics_content()
         main_events, modified_instances = self.parse_ics_content(ics_content)
@@ -416,6 +432,7 @@ class ICSParser:
                     filtered_events.append(event)
 
         # 處理修改實例
+        filtered_modified_instances = []
         if modified_instances:
             logger.info(f"Adding {len(modified_instances)} modified instances")
             # 修改實例作為獨立的單次事件（不是週期事件）
@@ -425,9 +442,11 @@ class ICSParser:
                     instance.rrule = None
                     instance.rdate = None
                     filtered_events.append(instance)
+                    filtered_modified_instances.append(instance)
 
         logger.info(f"Filtered to {len(filtered_events)} events (recurring events not expanded)")
-        return filtered_events
+        logger.info(f"Including {len(filtered_modified_instances)} modified recurring instances")
+        return filtered_events, filtered_modified_instances
 
     def _is_event_in_range(self, event: EventData, start_date: datetime, end_date: datetime) -> bool:
         """檢查事件是否在指定範圍內，處理 date 和 datetime 的比較"""

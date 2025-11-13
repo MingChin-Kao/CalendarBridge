@@ -142,6 +142,8 @@ tar -czf calendarbridge-backup.tar.gz config/ data/
 
 ## 🔄 更新部署
 
+### 一般更新流程
+
 ```bash
 # 停止服務
 docker compose stop
@@ -158,6 +160,33 @@ docker compose up -d
 # 檢查狀態
 docker compose logs -f calendarbridge
 ```
+
+### 完整重新部署
+
+當需要從頭開始部署時（例如：修復重複事件問題、切換 ICS 來源）：
+
+```bash
+# 1. 停止並移除容器
+docker compose down
+
+# 2. 清理本地資料
+rm -rf data/ logs/
+
+# 3. （可選）清理 Google Calendar 事件
+docker compose run --rm calendarbridge python tools/clean_google_calendar.py
+
+# 4. 更新程式碼（如果需要）
+git pull
+
+# 5. 重新建置並啟動
+docker compose build
+docker compose up -d
+
+# 6. 監控同步過程
+docker compose logs -f calendarbridge
+```
+
+⚠️ **注意**: `clean_google_calendar.py` 會刪除目標日曆中的所有事件，使用前請確認！
 
 ---
 

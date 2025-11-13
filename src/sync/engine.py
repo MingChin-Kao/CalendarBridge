@@ -64,13 +64,19 @@ class SyncEngine:
             
             # 3. 解析和展開 ICS 事件
             logger.info("Fetching and parsing ICS events...")
-            current_events = self.ics_parser.parse_and_expand(start_date, end_date)
+            current_events, modified_instances = self.ics_parser.parse_and_expand(start_date, end_date)
             stats['events_processed'] = len(current_events)
-            
+
             # 4. 偵測變更
             logger.info("Detecting changes...")
             new_events, updated_events, deleted_uids = self.database.detect_changes(current_events)
-            
+
+            # 4.3 處理修改的週期實例 - 需要刪除原始日期上的舊實例
+            modified_instance_cleanups = self._detect_modified_instance_cleanups(modified_instances)
+            if modified_instance_cleanups:
+                logger.info(f"Found {len(modified_instance_cleanups)} modified recurring instances that need cleanup")
+                deleted_uids.extend(modified_instance_cleanups)
+
             # 4.5 偵測週期事件系列的孤兒事件
             orphaned_uids = self.database.get_orphaned_series_events(current_events)
             if orphaned_uids:
@@ -318,3 +324,17 @@ class SyncEngine:
     def get_sync_history(self, limit: int = 10) -> List[Dict[str, Any]]:
         """取得同步歷史"""
         return self.database.get_sync_history(limit)
+
+    def _detect_modified_instance_cleanups(self, modified_instances: List[EventData]) -> List[str]:
+        """
+        偵測修改的週期實例，並返回需要清理的原始事件 UID
+
+        注意：在理想情況下，當週期事件的 EXDATE 被更新後，
+        Google Calendar 應該會自動隱藏被排除的日期。
+
+        但如果 EXDATE 沒有正確生效，這個方法會檢測是否有需要手動清理的事件。
+        目前這個方法返回空列表，因為主要修復是在 EXDATE 的格式上。
+        """
+        # 目前不需要特殊的清理邏輯
+        # EXDATE 的修復應該能解決問題
+        return []

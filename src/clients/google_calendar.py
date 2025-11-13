@@ -301,18 +301,28 @@ class GoogleCalendarClient:
                                     exdate_dt = exdate
 
                                 # 格式化為 Google Calendar 接受的格式
-                                # 最安全的方式是轉換為 UTC 時間
-                                from datetime import datetime, date
+                                # 關鍵：EXDATE 必須與 DTSTART 的時間精確匹配
+                                from datetime import datetime, date, timezone as dt_timezone
                                 if isinstance(exdate_dt, datetime):
-                                    # 轉換為 UTC 時間（Google Calendar 推薦的格式）
-                                    if exdate_dt.tzinfo:
-                                        exdate_utc = exdate_dt.astimezone(None).astimezone(__import__('datetime').timezone.utc)
-                                    else:
-                                        exdate_utc = exdate_dt
+                                    # Google Calendar 接受兩種 EXDATE 格式：
+                                    # 1. UTC 時間格式：EXDATE:20251113T020000Z
+                                    # 2. 本地時間格式（不帶時區）：EXDATE:20251113T100000
 
-                                    exdate_str = exdate_utc.strftime('%Y%m%dT%H%M%SZ')
-                                    google_event['recurrence'].append(f'EXDATE:{exdate_str}')
-                                    logger.debug(f"Added EXDATE with time: {exdate_str}")
+                                    # 為了確保匹配，我們需要使用與 DTSTART 相同的時間
+                                    # 如果 DTSTART 是 UTC，EXDATE 也用 UTC
+                                    # 如果 DTSTART 是本地時間，EXDATE 也用本地時間
+
+                                    if exdate_dt.tzinfo:
+                                        # 轉換為 UTC 並格式化
+                                        exdate_utc = exdate_dt.astimezone(dt_timezone.utc)
+                                        exdate_str = exdate_utc.strftime('%Y%m%dT%H%M%SZ')
+                                        google_event['recurrence'].append(f'EXDATE:{exdate_str}')
+                                        logger.info(f"Added EXDATE (UTC): {exdate_str} (original: {exdate_dt})")
+                                    else:
+                                        # 無時區，使用本地時間格式
+                                        exdate_str = exdate_dt.strftime('%Y%m%dT%H%M%S')
+                                        google_event['recurrence'].append(f'EXDATE:{exdate_str}')
+                                        logger.info(f"Added EXDATE (local): {exdate_str}")
                                 elif isinstance(exdate_dt, date):
                                     # 只有日期的 EXDATE（全天事件）
                                     exdate_str = exdate_dt.strftime('%Y%m%d')
@@ -368,14 +378,14 @@ class GoogleCalendarClient:
         }
         return status_map.get(ics_status.upper(), 'needsAction')
     
-    def find_events_by_original_uid(self, original_uid: str, 
+    def find_events_by_original_uid(self, original_uid: str,
                                   calendar_id: str = None) -> List[Dict[str, Any]]:
         """根據原始 UID 尋找事件"""
         if not self.service:
             self.authenticate()
-        
+
         calendar_id = calendar_id or self.config.calendar_id
-        
+
         try:
             # 使用私有擴展屬性搜尋
             events_result = self.service.events().list(
@@ -383,11 +393,39 @@ class GoogleCalendarClient:
                 privateExtendedProperty=f'originalUID={original_uid}',
                 maxResults=100
             ).execute()
-            
+
             return events_result.get('items', [])
-            
+
         except HttpError as e:
             logger.error(f"Failed to find events by UID {original_uid}: {e}")
+            return []
+
+    def find_recurring_instances(self, recurring_event_id: str,
+                                start_time: datetime, end_time: datetime,
+                                calendar_id: str = None) -> List[Dict[str, Any]]:
+        """
+        尋找週期事件的所有實例（包括被修改的實例）
+
+        這會返回週期事件在指定時間範圍內的所有實例，
+        包括那些應該被 EXDATE 排除但可能仍然存在的實例。
+        """
+        if not self.service:
+            self.authenticate()
+
+        calendar_id = calendar_id or self.config.calendar_id
+
+        try:
+            instances = self.service.events().instances(
+                calendarId=calendar_id,
+                eventId=recurring_event_id,
+                timeMin=start_time.isoformat(),
+                timeMax=end_time.isoformat()
+            ).execute()
+
+            return instances.get('items', [])
+
+        except HttpError as e:
+            logger.error(f"Failed to get recurring event instances: {e}")
             return []
     
     def _fix_rrule_for_google(self, rrule_str: str) -> Optional[str]:

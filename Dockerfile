@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製程式碼
 COPY src/ src/
+COPY tools/ tools/
 COPY main.py .
 
 # 複製配置檔案（不包含敏感資料）

@@ -83,9 +83,16 @@ with db._get_connection() as conn:
 
 **解決方法**:
 ```bash
-# 清理資料庫並重新同步
-python clean_database.py
-python main.py --once --force
+# 方法 1: 只清理本地資料庫（推薦）
+docker compose run --rm calendarbridge python tools/clean_database.py
+docker compose run --rm calendarbridge python main.py --once --force
+
+# 方法 2: 完全重置（包含清理 Google Calendar）
+docker compose down
+rm -rf data/ logs/
+docker compose run --rm calendarbridge python tools/clean_google_calendar.py
+docker compose build
+docker compose up -d
 ```
 
 #### 週期事件不結束問題
@@ -269,15 +276,62 @@ for record in history:
 
 ### 清理操作
 
+#### 清理本地資料庫
 ```bash
-# 完全重置資料庫
-python clean_database.py
+# 本機執行
+python tools/clean_database.py
 
-# 重新完整同步
-python main.py --once --force
+# Docker 環境執行
+docker compose run --rm calendarbridge python tools/clean_database.py
+```
 
-# 清理過期的日誌檔案
+此腳本會清理：
+- 所有事件快照（用於變更偵測）
+- 所有事件映射（ICS UID 與 Google Event ID 的對應）
+- 舊的同步歷史（保留最近 5 次記錄）
+
+#### 清理 Google Calendar 事件
+```bash
+# 本機執行
+python tools/clean_google_calendar.py
+
+# Docker 環境執行
+docker compose run --rm calendarbridge python tools/clean_google_calendar.py
+```
+
+⚠️ **警告**: 此腳本會直接刪除目標日曆中的所有事件，不會提示確認！
+
+使用時機：
+- 重新部署前需要清空所有事件
+- 出現大量重複事件需要重置
+- 切換到不同的 ICS 來源
+
+#### 完整重置流程
+```bash
+# 1. 停止服務
+docker compose down
+
+# 2. 清理本地資料
+rm -rf data/ logs/
+
+# 3. 清理 Google Calendar（可選）
+docker compose run --rm calendarbridge python tools/clean_google_calendar.py
+
+# 4. 重新建置並啟動
+docker compose build
+docker compose up -d
+
+# 5. 檢查同步狀態
+docker compose logs -f calendarbridge
+```
+
+#### 清理過期檔案
+```bash
+# 清理舊的日誌檔案
 find logs/ -name "*.log.*" -mtime +30 -delete
+
+# 清理資料庫備份
+find data/ -name "*.db.backup*" -mtime +30 -delete
 ```
 
 ### 備份操作
@@ -336,14 +390,30 @@ python main.py --once --dry-run
 ### 大量重複事件
 
 1. **停止同步**
-2. **清理資料庫**
 ```bash
-python clean_database.py
+docker compose down
 ```
-3. **手動清理 Google Calendar 中的重複事件**
-4. **重新執行同步**
+
+2. **清理本地資料**
 ```bash
-python main.py --once --force
+rm -rf data/ logs/
+```
+
+3. **清理 Google Calendar 中的重複事件**
+```bash
+# 自動清理所有事件（⚠️ 會刪除目標日曆中的所有事件）
+docker compose run --rm calendarbridge python tools/clean_google_calendar.py
+```
+
+4. **重新建置並啟動同步**
+```bash
+docker compose build
+docker compose up -d
+```
+
+5. **監控同步過程**
+```bash
+docker compose logs -f calendarbridge
 ```
 
 ### token 過期在生產環境
