@@ -265,11 +265,11 @@ class GoogleCalendarClient:
         else:
             google_event['start'] = {
                 'dateTime': event_data.start_datetime.isoformat(),
-                'timeZone': str(event_data.start_datetime.tzinfo)
+                'timeZone': self._get_valid_timezone(event_data.start_datetime)
             }
             google_event['end'] = {
                 'dateTime': event_data.end_datetime.isoformat(),
-                'timeZone': str(event_data.end_datetime.tzinfo)
+                'timeZone': self._get_valid_timezone(event_data.end_datetime)
             }
         
         # 處理週期規則
@@ -359,6 +359,51 @@ class GoogleCalendarClient:
         
         return google_event
     
+    def _get_valid_timezone(self, dt: datetime) -> str:
+        """取得有效的 IANA 時區名稱"""
+        if not dt or not dt.tzinfo:
+            return 'UTC'
+
+        # 如果是 ZoneInfo，直接使用 key
+        if hasattr(dt.tzinfo, 'key'):
+            return dt.tzinfo.key
+
+        # 如果 tzinfo 的字串表示包含 "Customized Time Zone"
+        # 或其他無效的時區名稱，使用 UTC offset 來判斷
+        tz_str = str(dt.tzinfo)
+
+        # 檢查是否為 UTC
+        if 'UTC' in tz_str or tz_str == 'timezone.utc':
+            return 'UTC'
+
+        # 對於 Outlook 的自定義時區，根據 offset 映射到標準時區
+        utc_offset = dt.utcoffset()
+        if utc_offset:
+            total_seconds = int(utc_offset.total_seconds())
+
+            # UTC+8 (台北時間)
+            if total_seconds == 28800:
+                return 'Asia/Taipei'
+            # UTC+9 (東京時間)
+            elif total_seconds == 32400:
+                return 'Asia/Tokyo'
+            # UTC+0 (UTC)
+            elif total_seconds == 0:
+                return 'UTC'
+            # 其他常見時區...
+            else:
+                # 如果無法映射，返回 UTC offset 格式 (RFC3339)
+                # Google Calendar 接受這種格式
+                hours = total_seconds // 3600
+                minutes = abs(total_seconds % 3600) // 60
+                if minutes:
+                    return f'Etc/GMT{-hours:+d}:{minutes:02d}'
+                else:
+                    return f'Etc/GMT{-hours:+d}'
+
+        # 預設返回 UTC
+        return 'UTC'
+
     def _convert_status(self, ics_status: str) -> str:
         """轉換事件狀態"""
         status_map = {
